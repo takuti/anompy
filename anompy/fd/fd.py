@@ -133,9 +133,9 @@ class RandomizedSketchUpdate(StreamAnomalyDetector):
             # D: m-by-(n+ell-1) matrix
             M = np.concatenate((self.E[:, :-1], Y), axis=1)
 
-        O = np.random.normal(0., 0.1, (self.m, 100 * self.ell))
+        G = np.random.normal(0., 0.1, (self.m, 100 * self.ell))
         MM = np.dot(M, M.T)
-        Q, R = ln.qr(np.dot(MM, O))
+        Q, R = ln.qr(np.dot(MM, G))
 
         # eig() returns eigen values/vectors with unsorted order
         s, A = ln.eig(np.dot(np.dot(Q.T, MM), Q))
