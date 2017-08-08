@@ -7,11 +7,11 @@ import numpy as np
 from numpy.testing import assert_almost_equal
 
 try:
-    from core.changefinder.utils import aryule, aryule_levinson, arburg
+    from anompy.detector.changefinder.utils import aryule, aryule_levinson, arburg
 except ImportError:
     sys.path.append(os.path.join(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                  os.pardir), os.pardir))
-    from core.changefinder.utils import aryule, aryule_levinson, arburg
+    from anompy.detector.changefinder.utils import aryule, aryule_levinson, arburg
 
 
 class ChangeFInderYuleWalkerTest(TestCase):
