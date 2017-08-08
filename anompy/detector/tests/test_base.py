@@ -9,6 +9,6 @@ class BaseDetectorTestCase(TestCase):
         detector = BaseDetector()
 
         for x in range(1, 11):
-            detector.update(x)
-            self.assertEqual(detector.predict(), x)
-            self.assertEqual(detector.detect(threshold=(x / 2.)), True)
+            detector.observe(x)
+            self.assertEqual(detector.forecast(), x)
+            self.assertEqual(detector.is_anomaly(threshold=(x / 2.)), True)
