@@ -1,12 +1,12 @@
 from unittest import TestCase
 
-from anompy.detector.simple_average import SimpleAverage
+from anompy.detector.simple import AverageDetector
 
 
-class SimpleAverageTestCase(TestCase):
+class AverageDetectorTestCase(TestCase):
 
     def test(self):
-        detector = SimpleAverage()
+        detector = AverageDetector()
         s = 0.
 
         for x in range(1, 11):

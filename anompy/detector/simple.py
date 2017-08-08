@@ -1,7 +1,7 @@
 from anompy.detector.base import BaseDetector
 
 
-class SimpleAverage(BaseDetector):
+class AverageDetector(BaseDetector):
 
     def __init__(self):
         self.avg = 0.
