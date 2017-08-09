@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from anompy.detector.simple import AverageDetector
+from anompy.detector.average import AverageDetector
 
 
 class AverageDetectorTestCase(TestCase):
