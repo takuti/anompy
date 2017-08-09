@@ -6,7 +6,8 @@ from anompy.detector.base import BaseDetector
 class AverageDetector(BaseDetector):
 
     def __init__(self, window_size=None):
-        if window_size is not None:
+        self.moving_average = window_size is not None
+        if self.moving_average:
             self.window_size = window_size
             self.window = deque(maxlen=window_size)
         else:
@@ -17,7 +18,7 @@ class AverageDetector(BaseDetector):
         return self.avg
 
     def observe(self, x):
-        if hasattr(self, 'window'):  # moving average
+        if self.moving_average:  # moving average
             self.window.append(x)
             self.avg = sum(self.window) / self.window_size
         else:  # simple average
