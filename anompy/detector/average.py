@@ -9,6 +9,8 @@ class AverageDetector(BaseDetector):
         self.moving_average = window_size is not None
         if self.moving_average:
             self.window = deque(maxlen=window_size)
+            if weights is not None:
+                assert window_size == len(weights)
             self.weights = weights
         else:
             self.cnt = 0.
