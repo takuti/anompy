@@ -8,6 +8,7 @@ class ExponentialSmoothing(BaseDetector):
         self.x_last = 0.
 
     def forecast(self):
+        assert hasattr(self, 'cache'), 'observe at least 1 data point first'
         self.cache = self.alpha * self.x_last + (1. - self.alpha) * self.cache
         return self.cache
 
