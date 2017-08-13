@@ -1,6 +1,7 @@
 class BaseDetector(object):
 
-    def __init__(self):
+    def __init__(self, threshold=0.):
+        self.threshold = threshold
         self.x_last = 0.
 
     def forecast(self):
@@ -9,11 +10,8 @@ class BaseDetector(object):
         return self.x_last
 
     def observe(self, x):
-        """Update forecasting/detection model for observed `x`.
+        """Update forecasting/detection model for observed `x`,
+        and return if expected `x` could be anomaly based on the threshold.
         """
         self.x_last = x
-
-    def is_anomaly(self, threshold=0.):
-        """Forecast expected `x` and detect if it could be anomaly based on the threshold.
-        """
-        return self.forecast() > threshold
+        return self.forecast() > self.threshold

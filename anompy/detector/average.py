@@ -5,7 +5,7 @@ from anompy.detector.base import BaseDetector
 
 class AverageDetector(BaseDetector):
 
-    def __init__(self, window_size=None, weights=None):
+    def __init__(self, window_size=None, weights=None, threshold=0.):
         self.moving_average = window_size is not None
         if self.moving_average:
             self.window = deque(maxlen=window_size)
@@ -14,6 +14,7 @@ class AverageDetector(BaseDetector):
             self.weights = weights
         else:
             self.cnt = 0.
+        self.threshold = threshold
         self.avg = 0.
 
     def forecast(self):
@@ -31,3 +32,4 @@ class AverageDetector(BaseDetector):
             # `(n - 1) m_{n-1}` returns sum of x_1, x_2, ..., x_{n-1}
             self.cnt += 1
             self.avg = self.avg + (x - self.avg) / self.cnt
+        return self.forecast() > self.threshold

@@ -3,8 +3,9 @@ from anompy.detector.base import BaseDetector
 
 class ExponentialSmoothing(BaseDetector):
 
-    def __init__(self, alpha=0.5):
+    def __init__(self, alpha=0.5, threshold=0.):
         self.alpha = alpha
+        self.threshold = threshold
         self.x_last = 0.
 
     def forecast(self):
@@ -16,6 +17,4 @@ class ExponentialSmoothing(BaseDetector):
         if not hasattr(self, 'forecast_cache'):
             self.forecast_cache = x
         self.x_last = x
-
-    def is_anomaly(self, threshold=0.):
-        return self.forecast_cache > threshold
+        return self.forecast_cache > self.threshold
