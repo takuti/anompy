@@ -8,14 +8,14 @@ class ExponentialSmoothing(BaseDetector):
         self.x_last = 0.
 
     def forecast(self):
-        assert hasattr(self, 'cache'), 'observe at least 1 data point first'
-        self.cache = self.alpha * self.x_last + (1. - self.alpha) * self.cache
-        return self.cache
+        assert hasattr(self, 'forecast_cache'), 'observe at least 1 data point first'
+        self.forecast_cache = self.alpha * self.x_last + (1. - self.alpha) * self.forecast_cache
+        return self.forecast_cache
 
     def observe(self, x):
-        if not hasattr(self, 'cache'):
-            self.cache = x
+        if not hasattr(self, 'forecast_cache'):
+            self.forecast_cache = x
         self.x_last = x
 
     def is_anomaly(self, threshold=0.):
-        return self.cache > threshold
+        return self.forecast_cache > threshold
