@@ -37,7 +37,7 @@ class DoubleExponentialSmoothing(BaseDetector):
     def observe(self, x):
         if not hasattr(self, 'level'):
             self.level = x
-            return False
+            return x > self.threshold
 
         if not hasattr(self, 'trend'):
             self.trend = x - self.level
