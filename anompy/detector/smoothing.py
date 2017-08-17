@@ -29,21 +29,22 @@ class DoubleExponentialSmoothing(BaseDetector):
         self.x_last = 0.
 
     def forecast(self):
+        if not hasattr(self, 'trend'):  # only 1 point has been observed
+            return self.x_last
+
         self.level_cache, self.level = self.level, self.alpha * self.x_last + (1. - self.alpha) * (self.level + self.trend)
         self.trend = self.beta * (self.level - self.level_cache) + (1. - self.beta) * self.trend
 
         return self.level + self.trend
 
     def observe(self, x):
-        if not hasattr(self, 'level'):
+        self.x_last = x
+
+        if not hasattr(self, 'level'):  # 1st level = 1st point
             self.level = x
             return x > self.threshold
 
-        if not hasattr(self, 'trend'):
-            self.trend = x - self.level
-            self.level_cache, self.level = self.level, x
-            self.trend = self.beta * (self.level - self.level_cache) + (1. - self.beta) * self.trend
-
-        self.x_last = x
+        if not hasattr(self, 'trend'):  # 2nd level = 1st point
+            self.level, self.trend = self.level, x - self.level
 
         return (self.level + self.trend) > self.threshold

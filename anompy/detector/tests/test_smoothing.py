@@ -26,8 +26,5 @@ class ExponentialSmoothingTestCase(TestCase):
 
         for i in range(len(series)):
             anomaly = detector.observe(series[i])
-            if i < 2:
-                continue
-
             self.assertTrue(anomaly)
             self.assertAlmostEqual(detector.forecast(), expected[i], delta=eps)
