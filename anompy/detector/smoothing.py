@@ -29,6 +29,8 @@ class DoubleExponentialSmoothing(BaseDetector):
         self.x_last = 0.
 
     def forecast(self):
+        assert hasattr(self, 'x_last'), 'observe at least 1 data point first'
+
         if not hasattr(self, 'trend'):  # only 1 point has been observed
             return self.x_last
 
