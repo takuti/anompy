@@ -31,13 +31,13 @@ class SingularSpectrumTransformation:
         q = np.random.normal(size=self.m)
         self.q = q / ln.norm(q)
 
-    def score(self, xs_past, xs_current, is_lanczos=True):
+    def score(self, xs_past, xs_current, lanczos=True):
         """Compute a change-point score for given past/current patterns.
 
         Args:
             xs_past (numpy array): Array of points for the `past` widows.
             xs_current (numpy array): Array of points for the `current` windows.
-            is_lanczos (boolean): Choose whether a socore has to be computed efficiently by using the Lanczos method.
+            lanczos (boolean): Choose whether a socore has to be computed efficiently by using the Lanczos method.
 
             The past/current points are stored as:
                 old <--> new:
@@ -68,7 +68,7 @@ class SingularSpectrumTransformation:
         for i in range(self.m):
             G[:, i] = xs_current[i:(i + self.w)]
 
-        if is_lanczos:
+        if lanczos:
             return self.__compute_lanczos(H, G)
         else:
             return self.__compute_svd(H, G)

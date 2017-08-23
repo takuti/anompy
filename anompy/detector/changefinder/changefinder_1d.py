@@ -8,20 +8,20 @@ logger = getLogger('ChangeFinder')
 
 class SDAR_1D:
 
-    def __init__(self, r, k, is_yule=True):
+    def __init__(self, r, k, yule=True):
         """Train a AR(k) model by using the SDAR algorithm (1d points only).
 
         Args:
             r (float): Discounting parameter.
             k (int): Order of the AR model.
-            is_yule (bool): Estimate the AR model by solving the Yule-Walke eq., or not.
+            yule (bool): Estimate the AR model by solving the Yule-Walke eq., or not.
                 If not, estimate it usign the Burg's method.
 
         """
 
         self.r = r
         self.k = k
-        self.is_yule = is_yule
+        self.yule = yule
 
         # initialize the parameters
         self.mu = self.sigma = 0.0
@@ -43,7 +43,7 @@ class SDAR_1D:
         # estimate mu
         self.mu = (1 - self.r) * self.mu + self.r * x
 
-        if self.is_yule:
+        if self.yule:
             # update c (coefficients of the Yule-Walker equation)
             self.c[0] = (1 - self.r) * self.c[0] + self.r * (x - self.mu) * (x - self.mu)  # c_0: x_t = x_{t-j}
             self.c[1:] = (1 - self.r) * self.c[1:] + self.r * (x - self.mu) * (xs[::-1][:self.k] - self.mu)
@@ -70,7 +70,7 @@ class SDAR_1D:
 
 class ChangeFinder:
 
-    def __init__(self, r, k, T1, T2, is_yule=True, is_logloss=True):
+    def __init__(self, r, k, T1, T2, yule=True, logloss=True):
         """ChangeFinder.
 
         Args:
@@ -78,9 +78,9 @@ class ChangeFinder:
             k (int): Order of the AR model (i.e. consider a AR(k) process).
             T1 (int): Window size for the simple moving average of outlier scores.
             T2 (int): Window size to compute a change point score.
-            is_yule (bool): Estimate the AR model by solving the Yule-Walke eq., or not.
+            yule (bool): Estimate the AR model by solving the Yule-Walke eq., or not.
                 If not, estimate it usign the Burg's method.
-            is_logloss (bool): Compute anomaly scores based on LogLoss or the Hellinger distance.
+            logloss (bool): Compute anomaly scores based on LogLoss or the Hellinger distance.
 
         """
 
@@ -93,13 +93,13 @@ class ChangeFinder:
 
         self.xs = np.zeros(k)
         self.outliers = np.zeros(T1)
-        self.sdar_outlier = SDAR_1D(r, k, is_yule)
+        self.sdar_outlier = SDAR_1D(r, k, yule)
 
         self.ys = np.zeros(k)
         self.changes = np.zeros(T2)
-        self.sdar_change = SDAR_1D(r / 2, k, is_yule)
+        self.sdar_change = SDAR_1D(r / 2, k, yule)
 
-        self.is_logloss = is_logloss
+        self.logloss = logloss
 
     def update(self, x):
         """Update AR models based on 1d input x.
@@ -113,7 +113,7 @@ class ChangeFinder:
         """
 
         # Stage 1: Outlier Detection (SDAR #1)
-        if self.is_logloss:
+        if self.logloss:
             p = self.sdar_outlier.update(x, self.xs)
             outlier = self.__logloss(p)
         else:
@@ -131,7 +131,7 @@ class ChangeFinder:
         y = self.__smooth(self.outliers)
 
         # Stage 2: Change Point Detection (SDAR #2)
-        if self.is_logloss:
+        if self.logloss:
             p = self.sdar_change.update(y, self.ys)
             change = self.__logloss(p)
         else:
