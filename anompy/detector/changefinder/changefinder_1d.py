@@ -1,6 +1,7 @@
 import numpy as np
 
 from .utils import aryule_levinson, arburg
+from ..base import BaseDetector
 
 from logging import getLogger
 logger = getLogger('ChangeFinder')
@@ -68,9 +69,9 @@ class SDAR_1D:
         return numerator / denominator
 
 
-class ChangeFinder:
+class ChangeFinder(BaseDetector):
 
-    def __init__(self, r, k, T1, T2, yule=True, logloss=True):
+    def __init__(self, r, k, T1, T2, yule=True, logloss=True, threshold_outlier=0., threshold_change=0.):
         """ChangeFinder.
 
         Args:
@@ -81,6 +82,8 @@ class ChangeFinder:
             yule (bool): Estimate the AR model by solving the Yule-Walke eq., or not.
                 If not, estimate it usign the Burg's method.
             logloss (bool): Compute anomaly scores based on LogLoss or the Hellinger distance.
+            threshold_outlier (float): Threshold for outlier detection.
+            threshold_outlier (float): Threshold for change-point detection.
 
         """
 
@@ -101,14 +104,14 @@ class ChangeFinder:
 
         self.logloss = logloss
 
-    def update(self, x):
+    def detect(self, x):
         """Update AR models based on 1d input x.
 
         Args:
             x (float): 1d input value.
 
         Returns:
-            (float, float): (Outlier score, Change point score).
+            {'outlier': (float, bool), 'change': (float, bool)}
 
         """
 
@@ -145,8 +148,8 @@ class ChangeFinder:
 
         self.ys = self.__append(self.ys, y, self.k)
 
-        # Return outlier and change point scores
-        return outlier, self.__smooth(self.changes)
+        change = self.__smooth(self.changes)
+        return {'outlier': (outlier, outlier > self.threshold_outlier), 'change': (change, change > self.threshold_change)}
 
     def __append(self, window, x, window_size):
         """Insert a sample x into a fix-sized window.

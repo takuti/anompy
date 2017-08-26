@@ -7,8 +7,10 @@ import numpy as np
 import numpy.linalg as ln
 from sklearn import preprocessing
 
+from ..base import BaseDetector
 
-class StreamAnomalyDetector:
+
+class StreamAnomalyDetector(BaseDetector):
 
     def __init__(self, Y0, criterion='p', criterion_v=0.5, ell=0):
         """Initialize a streaming anomaly detector.

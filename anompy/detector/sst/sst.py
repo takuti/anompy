@@ -2,20 +2,23 @@ import numpy as np
 import numpy.linalg as ln
 
 from .utils import power1, lanczos, tridiag_eig
+from ..base import BaseDetector
 
 
-class SingularSpectrumTransformation:
+class SingularSpectrumTransformation(BaseDetector):
 
-    def __init__(self, w, r=3):
+    def __init__(self, w, r=3, threshold=0.):
         """Change-point detection based on Singular Spectrum Transformation (SST),
 
         Args:
             w (int): Window size.
             r (int): Number of singular vectors spanning past/current subspaces.
+            threshold (float): Threshold for change-point detection.
 
         """
         self.w = w
         self.r = r
+        self.threshold = threshold
 
         # number of columns for the trajectory matrices:
         # usually set to `w`
@@ -31,13 +34,13 @@ class SingularSpectrumTransformation:
         q = np.random.normal(size=self.m)
         self.q = q / ln.norm(q)
 
-    def score(self, xs_past, xs_current, lanczos=True):
+    def detect(self, xs_past, xs_current, lanczos=True):
         """Compute a change-point score for given past/current patterns.
 
         Args:
             xs_past (numpy array): Array of points for the `past` widows.
             xs_current (numpy array): Array of points for the `current` windows.
-            lanczos (boolean): Choose whether a socore has to be computed efficiently by using the Lanczos method.
+            lanczos (bool): Choose whether a socore has to be computed efficiently by using the Lanczos method.
 
             The past/current points are stored as:
                 old <--> new:
@@ -52,7 +55,7 @@ class SingularSpectrumTransformation:
             |     yield sst.score(xs_past, xs_current)
 
         Returns:
-            float: Change-point score based on SST.
+            (float, boolean): Change-point score based on SST and its change-point label.
 
         """
         assert xs_past.size == self.n_past, 'lack of past samples'
@@ -69,9 +72,10 @@ class SingularSpectrumTransformation:
             G[:, i] = xs_current[i:(i + self.w)]
 
         if lanczos:
-            return self.__compute_lanczos(H, G)
+            score = self.__compute_lanczos(H, G)
         else:
-            return self.__compute_svd(H, G)
+            score = self.__compute_svd(H, G)
+        return (score, score > self.threshold)
 
     def __compute_svd(self, H, G):
         """Compute change-point score using SVD.
