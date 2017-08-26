@@ -9,7 +9,7 @@ class AverageDetector(BaseDetector):
         self.moving_average = window_size is not None
         if self.moving_average:
             self.window = deque(maxlen=window_size)
-            self.window.append(observed)
+            self.window.appendleft(observed)
             if weights is not None:
                 assert window_size == len(weights)
             self.weights = weights
@@ -25,7 +25,7 @@ class AverageDetector(BaseDetector):
             expected_series.append((self.avg, self.avg > self.threshold))
 
             if self.moving_average:  # moving average
-                self.window.append(observed)
+                self.window.appendleft(observed)
                 if self.weights is not None:
                     self.avg = sum([xi * wi for xi, wi in zip(self.window, self.weights)])
                 else:

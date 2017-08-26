@@ -42,7 +42,7 @@ class AverageDetectorTestCase(TestCase):
         self.assertAlmostEqual(detector.avg, sum(observed_series) / 5, delta=1e-6)
 
     def test_weighted_moving_average(self):
-        detector = AverageDetector(3, window_size=4, weights=[0.1, 0.2, 0.3, 0.4])
+        detector = AverageDetector(3, window_size=4, weights=[0.4, 0.3, 0.2, 0.1])
 
         observed_series = [10, 12, 13, 12, 10, 12]
         expected_series = detector.detect(observed_series)
