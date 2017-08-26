@@ -3,45 +3,50 @@ from anompy.detector.base import BaseDetector
 
 class ExponentialSmoothing(BaseDetector):
 
-    def __init__(self, observed, alpha=0.5, threshold=0.):
+    def __init__(self, observed_0, alpha=0.5, threshold=0.):
         self.alpha = alpha
         self.threshold = threshold
-        self.forecast = observed
+        self.forecasted = observed_0
 
     def detect(self, observed_series):
-        expected_series = []
+        forecasted_series = []
 
         for observed in observed_series:
-            expected_series.append((self.forecast, self.forecast > self.threshold))
-            self.forecast = self.alpha * observed + (1. - self.alpha) * self.forecast
+            forecasted_series.append((self.forecasted, self.forecasted > self.threshold))
+            self.forecasted = self.alpha * observed + (1. - self.alpha) * self.forecasted
 
-        return expected_series
+        return forecasted_series
 
 
 class DoubleExponentialSmoothing(BaseDetector):
 
-    def __init__(self, observed, alpha=0.5, beta=0.5, threshold=0.):
+    def __init__(self, observed_0, alpha=0.5, beta=0.5, threshold=0.):
         self.alpha = alpha
         self.beta = beta
         self.threshold = threshold
-
-        self.forecast = observed
+        self.forecasted = observed_0
 
     def detect(self, observed_series):
-        expected_series = []
+        forecasted_series = []
 
         for observed in observed_series:
-            expected_series.append((self.forecast, self.forecast > self.threshold))
+            forecasted_series.append((self.forecasted, self.forecasted > self.threshold))
 
             if not hasattr(self, 'level'):
                 # level, trend = 1st point, 2nd point - 1st point
-                self.level, self.trend = self.forecast, observed - self.forecast
+                self.level, self.trend = self.forecasted, observed - self.forecasted
 
-            self.level_last, self.level = self.level, self.alpha * observed + (1. - self.alpha) * (self.level + self.trend)
+            # update level
+            self.level_last = self.level
+            self.level = self.alpha * observed + (1. - self.alpha) * (self.level + self.trend)
+
+            # update trend
             self.trend = self.beta * (self.level - self.level_last) + (1. - self.beta) * self.trend
-            self.forecast = self.level + self.trend
 
-        return expected_series
+            # combine level + trend as a forecasted value
+            self.forecasted = self.level + self.trend
+
+        return forecasted_series
 
 
 class TripleExponentialSmoothing(BaseDetector):
@@ -52,7 +57,6 @@ class TripleExponentialSmoothing(BaseDetector):
         self.beta = beta
         self.gamma = gamma
         self.threshold = threshold
-        self.series = []
 
         # start creating forecast model
         self.seasonals = self.initial_seasonal_components(initial_series, season_length)
@@ -62,25 +66,31 @@ class TripleExponentialSmoothing(BaseDetector):
         for i, observed in enumerate(initial_series[1:]):
             seasonal_index = (i + 1) % season_length
 
-            level_last, self.level = self.level, self.alpha * (observed - self.seasonals[seasonal_index]) + (1. - self.alpha) * (self.level + self.trend)
+            # update level
+            level_last = self.level
+            self.level = self.alpha * (observed - self.seasonals[seasonal_index]) + (1. - self.alpha) * (self.level + self.trend)
+
+            # update trend
             self.trend = self.beta * (self.level - level_last) + (1. - self.beta) * self.trend
 
+            # update seasonal component
             self.seasonals[seasonal_index] = self.gamma * (observed - self.level) + (1. - self.gamma) * self.seasonals[seasonal_index]
 
-        self.forecast_count = 1
-        self.forecast = self.level + self.trend + self.seasonals[0]
+        self.num_forecasted = 1
+        self.forecasted = self.level + self.trend + self.seasonals[0]
 
     def detect(self, observed_series):
-        expected_series = []
+        forecasted_series = []
 
         for observed in observed_series:
-            expected_series.append((self.forecast, self.forecast > self.threshold))
+            forecasted_series.append((self.forecasted, self.forecasted > self.threshold))
 
-            seasonal_index = self.forecast_count % self.season_length
-            self.forecast_count += 1
-            self.forecast = self.level + self.forecast_count * self.trend + self.seasonals[seasonal_index]
+            self.num_forecasted += 1
 
-        return expected_series
+            seasonal_index = (self.num_forecasted - 1) % self.season_length
+            self.forecasted = self.level + self.num_forecasted * self.trend + self.seasonals[seasonal_index]
+
+        return forecasted_series
 
     @staticmethod
     def initial_trend(series, season_length):

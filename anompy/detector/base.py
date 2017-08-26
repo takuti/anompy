@@ -1,8 +1,8 @@
 class BaseDetector(object):
 
-    def __init__(self, observed, threshold=0.):
+    def __init__(self, observed_0, threshold=0.):
         self.threshold = threshold
-        self.observed_last = observed
+        self.observed_last = observed_0
 
     def detect(self, observed_series):
         """Launch forecasting for each observed data point based on a model.
@@ -15,10 +15,10 @@ class BaseDetector(object):
             list of (float, boolean): Forecasted series with anomaly label.
 
         """
-        expected_series = []
+        forecasted_series = []
 
         for observed in observed_series:
-            expected_series.append((self.observed_last, self.observed_last > self.threshold))
+            forecasted_series.append((self.observed_last, self.observed_last > self.threshold))
             self.observed_last = observed
 
-        return expected_series
+        return forecasted_series
