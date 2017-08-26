@@ -6,32 +6,50 @@ from anompy.detector.average import AverageDetector
 class AverageDetectorTestCase(TestCase):
 
     def test_simple_average(self):
-        detector = AverageDetector()
-        s = 0.
+        detector = AverageDetector(1)
 
-        for x in range(1, 11):
-            anomaly = detector.observe(x)
+        observed_series = list(range(2, 11))
+        expected_series = detector.detect(observed_series)
+
+        self.assertEqual(len(observed_series), len(expected_series))
+
+        avg_last = sum_observed = 1.
+
+        for observed, (expected, anomaly) in zip(observed_series, expected_series):
+            self.assertAlmostEqual(expected, avg_last, delta=1e-6)
             self.assertTrue(anomaly)
-            s += x
-            self.assertAlmostEqual(detector.forecast(), s / x, delta=1e-6)
+
+            sum_observed += observed
+            avg_last = sum_observed / observed  # `observed` = # of observed data points
 
     def test_moving_average(self):
-        detector = AverageDetector(window_size=5)
+        detector = AverageDetector(1, window_size=5)
 
-        for x in range(1, 6):
-            anomaly = detector.observe(x)
+        observed_series = list(range(2, 6))
+        expected_series = detector.detect(observed_series)
+        self.assertEqual(len(observed_series), len(expected_series))
+        for expected, anomaly in expected_series:
             self.assertTrue(anomaly)
-        self.assertAlmostEqual(detector.forecast(), sum(range(1, 6)) / 5, delta=1e-6)
 
-        for x in range(6, 11):
-            anomaly = detector.observe(x)
+        self.assertAlmostEqual(detector.avg, (1. + sum(observed_series)) / 5, delta=1e-6)
+
+        observed_series = list(range(6, 11))
+        expected_series = detector.detect(observed_series)
+        self.assertEqual(len(observed_series), len(expected_series))
+        for expected, anomaly in expected_series:
             self.assertTrue(anomaly)
-        self.assertAlmostEqual(detector.forecast(), sum(range(6, 11)) / 5, delta=1e-6)
+
+        self.assertAlmostEqual(detector.avg, sum(observed_series) / 5, delta=1e-6)
 
     def test_weighted_moving_average(self):
-        detector = AverageDetector(window_size=4, weights=[0.1, 0.2, 0.3, 0.4])
+        detector = AverageDetector(3, window_size=4, weights=[0.1, 0.2, 0.3, 0.4])
 
-        for x in [3, 10, 12, 13, 12, 10, 12]:
-            anomaly = detector.observe(x)
+        observed_series = [10, 12, 13, 12, 10, 12]
+        expected_series = detector.detect(observed_series)
+
+        self.assertEqual(len(observed_series), len(expected_series))
+
+        for expected, anomaly in expected_series:
             self.assertTrue(anomaly)
-        self.assertAlmostEqual(detector.forecast(), 11.5, delta=1e-6)
+
+        self.assertAlmostEqual(detector.avg, 11.5, delta=1e-6)

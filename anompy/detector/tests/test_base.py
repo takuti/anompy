@@ -7,12 +7,17 @@ class BaseDetectorTestCase(TestCase):
 
     def test(self):
         th = 5.
-        detector = BaseDetector(threshold=th)
+        detector = BaseDetector(1, threshold=th)
 
-        for x in range(1, 11):
-            anomaly = detector.observe(x)
-            if x > th:
+        observed_series = list(range(2, 11))
+        expected_series = detector.detect(observed_series)
+
+        self.assertEqual(len(observed_series), len(expected_series))
+
+        for observed, (expected, anomaly) in zip(observed_series, expected_series):
+            self.assertEqual(expected, observed - 1)
+
+            if (observed - 1) > th:
                 self.assertTrue(anomaly)
             else:
                 self.assertFalse(anomaly)
-            self.assertEqual(detector.forecast(), x)

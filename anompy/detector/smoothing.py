@@ -3,58 +3,50 @@ from anompy.detector.base import BaseDetector
 
 class ExponentialSmoothing(BaseDetector):
 
-    def __init__(self, alpha=0.5, threshold=0.):
+    def __init__(self, observed, alpha=0.5, threshold=0.):
         self.alpha = alpha
         self.threshold = threshold
-        self.x_last = 0.
+        self.forecast = observed
 
-    def forecast(self):
-        assert hasattr(self, 'forecast_cache'), 'observe at least 1 data point first'
-        self.forecast_cache = self.alpha * self.x_last + (1. - self.alpha) * self.forecast_cache
-        return self.forecast_cache
+    def detect(self, observed_series):
+        expected_series = []
 
-    def observe(self, x):
-        if not hasattr(self, 'forecast_cache'):
-            self.forecast_cache = x
-        self.x_last = x
-        return self.forecast_cache > self.threshold
+        for observed in observed_series:
+            expected_series.append((self.forecast, self.forecast > self.threshold))
+            self.forecast = self.alpha * observed + (1. - self.alpha) * self.forecast
+
+        return expected_series
 
 
 class DoubleExponentialSmoothing(BaseDetector):
 
-    def __init__(self, alpha=0.5, beta=0.5, threshold=0.):
+    def __init__(self, observed, alpha=0.5, beta=0.5, threshold=0.):
         self.alpha = alpha
         self.beta = beta
         self.threshold = threshold
-        self.x_last = 0.
 
-    def forecast(self):
-        assert hasattr(self, 'x_last'), 'observe at least 1 data point first'
+        self.forecast = observed
 
-        if not hasattr(self, 'trend'):  # only 1 point has been observed
-            return self.x_last
+    def detect(self, observed_series):
+        expected_series = []
 
-        self.level_cache, self.level = self.level, self.alpha * self.x_last + (1. - self.alpha) * (self.level + self.trend)
-        self.trend = self.beta * (self.level - self.level_cache) + (1. - self.beta) * self.trend
+        for observed in observed_series:
+            expected_series.append((self.forecast, self.forecast > self.threshold))
 
-        return self.level + self.trend
+            if not hasattr(self, 'level'):
+                # level, trend = 1st point, 2nd point - 1st point
+                self.level, self.trend = self.forecast, observed - self.forecast
 
-    def observe(self, x):
-        self.x_last = x
+            self.level_last, self.level = self.level, self.alpha * observed + (1. - self.alpha) * (self.level + self.trend)
+            self.trend = self.beta * (self.level - self.level_last) + (1. - self.beta) * self.trend
+            self.forecast = self.level + self.trend
 
-        if not hasattr(self, 'level'):  # 1st level = 1st point
-            self.level = x
-            return x > self.threshold
-
-        if not hasattr(self, 'trend'):  # 2nd level = 1st point
-            self.level, self.trend = self.level, x - self.level
-
-        return (self.level + self.trend) > self.threshold
+        return expected_series
 
 
 class TripleExponentialSmoothing(BaseDetector):
 
-    def __init__(self, season_length=10, alpha=0.5, beta=0.5, gamma=0.5, threshold=0.):
+    def __init__(self, initial_series, season_length=10, alpha=0.5, beta=0.5, gamma=0.5, threshold=0.):
         self.season_length = season_length
         self.alpha = alpha
         self.beta = beta
@@ -62,33 +54,33 @@ class TripleExponentialSmoothing(BaseDetector):
         self.threshold = threshold
         self.series = []
 
-    def forecast(self):
-        assert len(self.series) >= self.season_length, 'at least one season should be observed'
+        # start creating forecast model
+        self.seasonals = self.initial_seasonal_components(initial_series, season_length)
+        self.level = initial_series[0]
+        self.trend = self.initial_trend(initial_series, season_length)
 
-        if not hasattr(self, 'seasonals'):  # start creating forecast model
-            self.seasonals = self.initial_seasonal_components(self.series, self.season_length)
-            self.level = self.series[0]
-            self.trend = self.initial_trend(self.series, self.season_length)
-            for i in range(1, len(self.series)):
-                x = self.series[i]
-                component_index = i % self.season_length
+        for i, observed in enumerate(initial_series[1:]):
+            seasonal_index = (i + 1) % season_length
 
-                last_level, self.level = self.level, self.alpha * (x - self.seasonals[component_index]) + (1. - self.alpha) * (self.level + self.trend)
-                self.trend = self.beta * (self.level - last_level) + (1. - self.beta) * self.trend
-                self.seasonals[component_index] = self.gamma * (x - self.level) + (1. - self.gamma) * self.seasonals[component_index]
+            level_last, self.level = self.level, self.alpha * (observed - self.seasonals[seasonal_index]) + (1. - self.alpha) * (self.level + self.trend)
+            self.trend = self.beta * (self.level - level_last) + (1. - self.beta) * self.trend
 
-            self.forecast_count = 0
+            self.seasonals[seasonal_index] = self.gamma * (observed - self.level) + (1. - self.gamma) * self.seasonals[seasonal_index]
 
-        self.forecast_count += 1
+        self.forecast_count = 1
+        self.forecast = self.level + self.trend + self.seasonals[0]
 
-        forecast_component_index = (self.forecast_count + len(self.series) - 1) % self.season_length
-        return (self.level + self.forecast_count * self.trend) + self.seasonals[forecast_component_index]
+    def detect(self, observed_series):
+        expected_series = []
 
-    def observe(self, x):
-        if hasattr(self, 'forecast_count'):  # already called `forecast()`, so we cannot update seasonality model
-            return self.forecast() > self.threshold
-        self.series.append(x)
-        return x > self.threshold
+        for observed in observed_series:
+            expected_series.append((self.forecast, self.forecast > self.threshold))
+
+            seasonal_index = self.forecast_count % self.season_length
+            self.forecast_count += 1
+            self.forecast = self.level + self.forecast_count * self.trend + self.seasonals[seasonal_index]
+
+        return expected_series
 
     @staticmethod
     def initial_trend(series, season_length):

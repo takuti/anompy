@@ -6,31 +6,46 @@ from anompy.detector.smoothing import ExponentialSmoothing, DoubleExponentialSmo
 class ExponentialSmoothingTestCase(TestCase):
 
     def test(self):
-        detector = ExponentialSmoothing(alpha=.1)
+        detector = ExponentialSmoothing(3, alpha=.1)
 
-        series = [3, 10, 12, 13, 12, 10, 12]
-        expected = [3, 3.7, 4.53, 5.377, 6.0393, 6.43537, 6.991833]
+        observed_series = [10, 12, 13, 12, 10, 12]
+
+        expected_series = detector.detect(observed_series)
+        self.assertEqual(len(observed_series), len(expected_series))
+
+        truth_series = [3., 3.7, 4.53, 5.377, 6.0393, 6.43537, 6.991833]
+        self.assertEqual(len(observed_series), len(truth_series) - 1)
+
         eps = 1e-6
 
-        for i in range(len(series)):
-            anomaly = detector.observe(series[i])
+        for (expected, anomaly), truth in zip(expected_series, truth_series):
             self.assertTrue(anomaly)
-            self.assertAlmostEqual(detector.forecast(), expected[i], delta=eps)
+            self.assertAlmostEqual(expected, truth, delta=eps)
+
+        self.assertAlmostEqual(detector.forecast, truth_series[-1], delta=eps)
 
 
 class DoubleExponentialSmoothingTestCase(TestCase):
 
     def test(self):
-        detector = DoubleExponentialSmoothing(alpha=.9, beta=.9)
+        detector = DoubleExponentialSmoothing(3, alpha=.9, beta=.9)
 
-        series = [3, 10, 12, 13, 12, 10, 12]
-        expected = [3, 17.0, 15.45, 14.210500000000001, 11.396044999999999, 8.183803049999998, 12.753698384500002, 13.889016464000003]
+        observed_series = [10, 12, 13, 12, 10, 12]
+
+        expected_series = detector.detect(observed_series)
+        self.assertEqual(len(observed_series), len(expected_series))
+        print(expected_series)
+
+        truth_series = [3, 17.0, 15.45, 14.210500000000001, 11.396044999999999, 8.183803049999998, 12.753698384500002]
+        self.assertEqual(len(observed_series), len(truth_series) - 1)
+
         eps = 1e-6
 
-        for i in range(len(series)):
-            anomaly = detector.observe(series[i])
+        for (expected, anomaly), truth in zip(expected_series, truth_series):
             self.assertTrue(anomaly)
-            self.assertAlmostEqual(detector.forecast(), expected[i], delta=eps)
+            self.assertAlmostEqual(expected, truth, delta=eps)
+
+        self.assertAlmostEqual(detector.forecast, truth_series[-1], delta=eps)
 
 
 class TripleExponentialSmoothingTestCase(TestCase):
@@ -56,13 +71,16 @@ class TripleExponentialSmoothingTestCase(TestCase):
             self.assertAlmostEqual(components[i], expected[i], delta=eps)
 
     def test(self):
-        detector = TripleExponentialSmoothing(season_length=self.slen, alpha=0.716, beta=0.029, gamma=0.993)
+        detector = TripleExponentialSmoothing(self.series, season_length=self.slen, alpha=0.716, beta=0.029, gamma=0.993)
 
-        for x in self.series:
-            self.assertTrue(detector.observe(x))
+        expected_series = detector.detect([0.] * self.slen)
+        self.assertEqual(len(expected_series), self.slen)
 
-        expected = [22.42511411230803, 15.343371755223066, 24.14282581581347, 27.02259921391996, 35.31139046245393, 38.999014669337356, 49.243283875692654, 40.84636009563803, 31.205180503707012, 32.96259980122959, 28.5164783238384, 32.30616336737171]
+        truth_series = [22.42511411230803, 15.343371755223066, 24.14282581581347, 27.02259921391996, 35.31139046245393, 38.999014669337356, 49.243283875692654, 40.84636009563803, 31.205180503707012, 32.96259980122959, 28.5164783238384, 32.30616336737171]
+        self.assertEqual(len(expected_series), len(truth_series))
+
         eps = 1e-6
 
-        for i in range(self.slen):
-            self.assertAlmostEqual(detector.forecast(), expected[i], delta=eps)
+        for (expected, anomaly), truth in zip(expected_series, truth_series):
+            self.assertTrue(anomaly)
+            self.assertAlmostEqual(expected, truth, delta=eps)
