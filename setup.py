@@ -1,5 +1,4 @@
-from setuptools import setup
-
+from setuptools import setup, find_packages
 
 setup(
     name='anompy',
@@ -9,6 +8,6 @@ setup(
     author_email='k.takuti@gmail.com',
     license='MIT',
     url='https://github.com/takuti/anompy',
-    packages=['anompy'],
-    install_requires=[],
+    packages=find_packages(exclude=['*tests*']),
+    install_requires=['numpy', 'scikit_learn'],
 )
