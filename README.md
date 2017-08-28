@@ -47,7 +47,7 @@ anompy currently supports following algorithms:
 - `ExponentialSmoothing`, `DoubleExponentialSmoothing`, and `TripleExponentialSmoothing`
     - See ["Exponential smoothing" on Wikipedia](https://en.wikipedia.org/wiki/Exponential_smoothing).
     - Triple exponential smoothing is also known as Holt-Winters method.
-- Experimentsl
+- Experimental
     - `ChangeFinder`
     - `SingularSpectrumTransform`
     - `StreamAnomalyDetector`
